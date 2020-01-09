@@ -2,7 +2,8 @@ class chip8 {
     public:
         chip8();
         ~chip8();
-
+        
+        void loadROM(char*);
     private:
         unsigned short opcode; 
         unsigned char memory[4096];
@@ -15,7 +16,7 @@ class chip8 {
         unsigned char sound_timer;
 
         unsigned short stack[16];
-        unsigned short stack_pointer;
+        unsigned short sp;
 
         unsigned char key[16];
         void init();
