@@ -67,9 +67,7 @@ void chip8::init() {
     sound_timer = 0;
 }
 
-void chip8::emulateCycle() {
-    opcode = memory[pc] << 8 | memory[pc + 1];  // get 2 byte opcode from memory
-
+void chip8::runOpcode() {
     switch (opcode & 0xF000) {
         case 0x0000:
             switch (opcode & 0x000F) {
@@ -323,8 +321,9 @@ void chip8::emulateCycle() {
         default:
             printf("Unknown opcode: %X\n", opcode);
     }
+}
 
-    // TODO: emulate each cycle at 60Hz
+void chip8::updateTimers() {
     if (delay_timer > 0) {
         delay_timer--;
     }
@@ -335,4 +334,12 @@ void chip8::emulateCycle() {
         }
         sound_timer--;
     }
+}
+
+void chip8::emulateCycle() {
+    opcode = memory[pc] << 8 | memory[pc + 1];  // get 2 byte opcode from memory
+
+    runOpcode();
+
+    updateTimers();
 }

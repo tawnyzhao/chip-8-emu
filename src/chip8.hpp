@@ -4,6 +4,8 @@ class chip8 {
         ~chip8();
         
         void loadROM(char*);
+        void emulateCycle();
+
     private:
         unsigned short opcode; 
         unsigned char memory[4096];
@@ -20,5 +22,6 @@ class chip8 {
 
         unsigned char key[16];
         void init();
-        void emulateCycle();
+        void runOpcode();
+        void updateTimers();
 };
