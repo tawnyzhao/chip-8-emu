@@ -40,6 +40,7 @@ void chip8::loadROM(char *filename) {
     fclose(rom);
     return;
 }
+
 void chip8::init() {
     pc = 0x200;
     opcode = 0;
@@ -195,8 +196,123 @@ void chip8::emulateCycle() {
             }
             break;
 
-        
-        // TODO: Implement all opcodes
+        case 0xA000:
+            index = opcode & 0x0FFF;
+            pc += 2;
+            break;
+
+        case 0xB000:
+            pc = opcode & 0x0FFF + V[0x0000];
+            break;
+
+        case 0xC000:  // sets VX to randint
+            V[opcode & 0x0F00 >> 8] =
+                opcode & 0x0FF;  // TODO: Actually set to randint
+            pc += 2;
+            break;
+
+        case 0xD000:
+            unsigned short pixel;
+            V[0x000F] = 0;
+
+            for (int i = 0; i < opcode & 0x000F; i++) {
+                pixel = memory[index + i];
+                for (int j = 0; j < 8; j++) {
+                    if (pixel & (0x80 >> j) != 0) {
+                        if (gfx[V[opcode & 0x0F00 >> 8] + j +
+                                (V[opcode & 0x00F0 >> 4] + i) * 64] == 1) {
+                            V[0xF] = 1;
+                        } else {
+                            gfx[V[opcode & 0x0F00 >> 8] + j +
+                                (V[opcode & 0x00F0 >> 4] + i) * 64] = 1;
+                        }
+                    }
+                }
+            }
+            pc += 2;
+            break;
+        case 0xE000:
+            switch (opcode & 0x000F) {
+                case 0x0001:
+                    if (key[opcode & 0x0F000 >> 8] !=
+                        V[opcode & 0x0F000 >> 8]) {
+                        pc += 4;
+                    } else {
+                        pc += 2;
+                    }
+                    break;
+                case 0x000E:
+                    if (key[opcode & 0x0F000 >> 8] ==
+                        V[opcode & 0x0F000 >> 8]) {
+                        pc += 4;
+                    } else {
+                        pc += 2;
+                    }
+                    break;
+            }
+            break;
+        case 0xF000:
+            switch (opcode & 0x0FF) {
+                case 0x0007:
+                    V[opcode & 0x0F000 >> 8] = delay_timer;
+                    pc += 2;
+                    break;
+                case 0x000A:
+                    bool key_pressed = false;
+                    for (int i = 0; i < 16; i++) {
+                        if (key[i]) {
+                            V[opcode & 0x0F000 >> 8] = key[i];
+                            key_pressed = true;
+                        }
+                    }
+                    if (key_pressed) {
+                        pc += 2;
+                    }
+                    break;
+                case 0x0015:
+                    delay_timer = V[opcode & 0x0F000 >> 8];
+                    pc += 2;
+                    break;
+                case 0x0018:
+                    sound_timer = V[opcode & 0x0F000 >> 8];
+                    pc += 2;
+                    break;
+                case 0x001E:
+                    if (index > 0xFFF0 - V[opcode & 0x0F000 >> 8]) {
+                        V[0xF] = 1;
+                    } else {
+                        V[0xF] = 0;
+                    }
+                    index += V[opcode & 0x0F000 >> 8];
+                    pc += 2;
+                    break;
+                case 0x0029:
+                    index = V[opcode & 0x0F000 >> 8] * sizeof(unsigned) * 5;
+                    pc += 2;
+                    break;
+
+                case 0x0033:
+                    memory[index] = V[opcode & 0x0F000 >> 8] /
+                                    100;  // Most significant first
+                    memory[index + 1] = V[opcode & 0x0F000 >> 8] / 10 % 10;
+                    memory[index + 2] = V[opcode & 0x0F000 >> 8] % 100;
+                    pc += 2;
+                    break;
+                case 0x0055:
+                    for (int i = 0; i<opcode & 0x0F000>> 8; i++) {
+                        memory[index + i] = V[i];
+                    }
+                    pc += 2;
+                    break;
+
+                case 0x0065:
+                    for (int i = 0; i<opcode & 0x0F000>> 8; i++) {
+                        V[i] = memory[index + 1];
+                    }
+                    pc += 2;
+                    break;
+            }
+            break;
         default:
             printf("Unknown opcode: %X\n", opcode);
     }
