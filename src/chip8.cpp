@@ -47,11 +47,18 @@ void chip8::init() {
     index = 0;
     sp = 0;
 
-    memset(gfx, 0, 64 * 32 * sizeof(unsigned char));  // Init gfx
-    memset(stack, 0, 16 * sizeof(unsigned char));     // Init stack
-    memset(V, 0, 16 * sizeof(unsigned short));        // Init register
-    memset(memory, 0, 4096 * sizeof(unsigned char));  // Init memory
-
+    for (int i = 0; i < GFX_SIZE; i++) {
+        gfx[i] = 0;
+    } 
+    for (int i = 0; i < STACK_SIZE; i++) {
+        stack[i] = 0;
+        key[i] = 0;
+        V[i] = 0;
+    }
+    for (int i = 0; i < MEM_SIZE; i++) {
+        memory[i]++;
+    }
+    
     for (int i = 0; i < 80; i++) {
         memory[i] = chip8_fontset[i];
     }
