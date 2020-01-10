@@ -5,7 +5,7 @@
 
 #define REG_SIZE 16
 #define MEM_SIZE 4096
-#define GFX_SIZE 64*32
+#define GFX_SIZE 64 * 32
 #define STACK_SIZE 16
 
 unsigned char chip8_fontset[80] = {
@@ -60,7 +60,7 @@ void chip8::init() {
 }
 
 void chip8::emulateCycle() {
-	opcode = memory[pc] << 8 | memory[pc + 1]; // get 2 byte opcode from memory
+    opcode = memory[pc] << 8 | memory[pc + 1];  // get 2 byte opcode from memory
 
     switch (opcode & 0xF000) {
         case 0x0000:
@@ -79,17 +79,123 @@ void chip8::emulateCycle() {
                 default:
                     printf("Unknown opcode [0x0000]: 0x%X\n", opcode);
             }
-            break; 
-        case 0x1000: //Jumps to NNN
+            break;
+        case 0x1000:  // Jumps to NNN
             pc = opcode & 0x0FFF;
             break;
-            
-        case 0x2000:
+
+        case 0x2000:  // Calls subroutine at NNN
             stack[sp] = pc;
             ++sp;
             pc = opcode & 0x0FFF;
             break;
 
+        case 0x3000:
+            if (V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) {
+                pc += 4;
+            } else {
+                pc += 2;
+            }
+            break;
+
+        case 0x4000:
+            if ((V[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF))) {
+                pc += 4;
+            } else {
+                pc += 2;
+            }
+            break;
+
+        case 0x5000:
+            if ((V[opcode & 0x0F00 >> 8]) == (V[opcode & 0x00F0 >> 4])) {
+                pc += 4;
+            } else {
+                pc += 2;
+            }
+            break;
+
+        case 0x6000:
+            V[opcode & 0x0F00 >> 8] = opcode & 0x00FF;
+            pc += 2;
+            break;
+
+        case 0x7000:
+            V[opcode & 0x0F00 >> 8] += opcode & 0x00FF;
+            pc += 2;
+            break;
+
+        case 0x8000:
+            switch (opcode & 0x000F) {
+                case 0x0000:
+                    V[opcode & 0x0F00 >> 8] = V[opcode & 0x00F0 >> 4];
+                    pc += 2;
+                    break;
+                case 0x0001:
+                    V[opcode & 0x0F00 >> 8] |= V[opcode & 0x00F0 >> 4];
+                    pc += 2;
+                    break;
+                case 0x0002:
+                    V[opcode & 0x0F00 >> 8] &= V[opcode & 0x00F0 >> 4];
+                    pc += 2;
+                    break;
+                case 0x0003:
+                    V[opcode & 0x0F00 >> 8] ^= V[opcode & 0x00F0 >> 4];
+                    pc += 2;
+                    break;
+                case 0x0004:
+                    if (V[opcode & 0x0F00 >> 8] >
+                        (0xFF - V[opcode & 0x00F0 >> 4])) {
+                        V[0x000F] = 1;
+                    } else {
+                        V[0x000F] = 0;
+                    }
+                    V[opcode & 0x0F00 >> 8] ^= V[opcode & 0x00F0 >> 4];
+                    pc += 2;
+                    break;
+
+                case 0x0005:
+                    if (V[opcode & 0x0F00 >> 8] < V[opcode & 0x00F0 >> 4]) {
+                        V[0x000F] = 0;
+                    } else {
+                        V[0x000F] = 1;
+                    }
+                    V[opcode & 0x0F00 >> 8] -= V[opcode & 0x00F0 >> 4];
+                    pc += 2;
+                    break;
+
+                case 0x0006:  // Bitshift Right
+                    V[0x000F] = V[opcode & 0x0F00 >> 8] & 0x0001;
+                    V[opcode & 0x0F00 >> 8] = V[opcode & 0x0F00 >> 8] >> 1;
+                    pc += 2;
+                    break;
+
+                case 0x0007:
+                    if (V[opcode & 0x0F00 >> 4] < V[opcode & 0x00F0 >> 8]) {
+                        V[0x000F] = 0;
+                    } else {
+                        V[0x000F] = 1;
+                    }
+                    V[opcode & 0x0F00 >> 8] =
+                        V[opcode & 0x00F0 >> 4] - V[opcode & 0x0F00 >> 8];
+                    pc += 2;
+                    break;
+
+                case 0x000E:
+                    V[0x000F] = V[opcode & 0x8000 >> 8] >> 7;
+                    V[opcode & 0x0F00 >> 8] = V[opcode & 0x0F00 >> 8] << 1;
+                    pc += 2;
+                    break;
+            }
+            break;
+        case 0x9000:
+            if (V[opcode & 0x0F00 >> 8] != V[opcode & 0x00F0 >> 4]) {
+                pc += 4;
+            } else {
+                pc += 2;
+            }
+            break;
+
+        
         // TODO: Implement all opcodes
         default:
             printf("Unknown opcode: %X\n", opcode);
