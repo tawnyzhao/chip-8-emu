@@ -5,10 +5,12 @@
 
 #define REG_SIZE 16
 #define MEM_SIZE 4096
-#define GFX_SIZE 64 * 32
+#define ROM_START 512
+#define GFX_SIZE 64*32
 #define STACK_SIZE 16
 
-unsigned char chip8_fontset[80] = {
+
+const unsigned char chip8_fontset[80] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0,  // 0
     0x20, 0x60, 0x20, 0x20, 0x70,  // 1
     0xF0, 0x10, 0xF0, 0x80, 0xF0,  // 2
@@ -27,10 +29,18 @@ unsigned char chip8_fontset[80] = {
     0xF0, 0x80, 0xF0, 0x80, 0x80   // F
 };
 
+chip8::chip8() {
+    // Empty
+}
+
+chip8::~chip8() {
+    // Empty
+}
+
 void chip8::loadROM(char *filename) {
-    init();
+    init(); 
     FILE *rom = fopen(filename, "rb");
-    int i = 512;
+    int i = ROM_START;
     if (rom != NULL) {
         do {
             char c = fgetc(rom);
@@ -42,7 +52,7 @@ void chip8::loadROM(char *filename) {
 }
 
 void chip8::init() {
-    pc = 0x200;
+    pc = ROM_START;
     opcode = 0;
     index = 0;
     sp = 0;
@@ -59,7 +69,7 @@ void chip8::init() {
         memory[i]++;
     }
     
-    for (int i = 0; i < 80; i++) {
+    for (int i = 0; i < 80; i++) { //Load fonts
         memory[i] = chip8_fontset[i];
     }
 
@@ -262,7 +272,7 @@ void chip8::runOpcode() {
                     V[opcode & 0x0F000 >> 8] = delay_timer;
                     pc += 2;
                     break;
-                case 0x000A:
+                case 0x000A: {
                     bool key_pressed = false;
                     for (int i = 0; i < 16; i++) {
                         if (key[i]) {
@@ -274,6 +284,7 @@ void chip8::runOpcode() {
                         pc += 2;
                     }
                     break;
+                }
                 case 0x0015:
                     delay_timer = V[opcode & 0x0F000 >> 8];
                     pc += 2;
@@ -342,4 +353,8 @@ void chip8::emulateCycle() {
     runOpcode();
 
     updateTimers();
+}
+
+void chip8::printScreen() {
+    
 }
